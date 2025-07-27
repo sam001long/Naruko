@@ -1,0 +1,158 @@
+/* ---------- 全局重置 ---------- */
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  font-family: sans-serif;
+}
+
+/* ---------- 背景层 (z-index:0) ---------- */
+.background-layer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0;
+}
+.background-layer video,
+.background-layer img {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* ---------- 角色层 (z-index:1) ---------- */
+.character-layer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 1;
+}
+.character-layer video,
+.character-layer img {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* ---------- UI 层 (z-index:10) ---------- */
+.ui-layer {
+  position: relative;
+  z-index: 10;
+  height: 100vh;
+}
+
+/* 音效开关 */
+#soundToggle {
+  position: fixed; top: 20px; right: 20px; z-index: 11;
+  font-size: 24px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 50%; width: 40px; height: 40px;
+  border: none; cursor: pointer;
+}
+.sound-hint {
+  position: fixed; top: 70px; right: 20px; z-index: 11;
+  color: #fff; font-size: 14px;
+}
+
+/* 记分板 */
+.scoreboard {
+  position: absolute; top: 20px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px; color: #fff;
+  background: rgba(0,0,0,0.5);
+  padding: 5px 10px; border-radius: 5px;
+  white-space: nowrap; z-index: 11;
+}
+
+/* CPU 出拳 */
+.cpu-hands {
+  position: absolute; top: 25%; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 20px; z-index: 11;
+}
+.cpu-hands img {
+  width: 80px; height: 80px; cursor: default;
+}
+
+/* 玩家 出拳（抬高避免被广告挡） */
+.player-hands {
+  position: absolute;
+  bottom: calc(60px + 140px);
+  left: 50%; transform: translateX(-50%);
+  display: flex; gap: 20px; z-index: 11;
+}
+.player-hands img {
+  width: 80px; height: 80px;
+  cursor: pointer; transition: transform .1s ease;
+}
+
+/* 缩放动画 */
+@keyframes scale-punch {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.6); }
+  100% { transform: scale(1); }
+}
+.scale {
+  animation: scale-punch .3s ease-in-out;
+}
+
+/* 继续按钮（抬高避免被广告挡） */
+#continue {
+  position: absolute;
+  bottom: calc(60px + 80px);
+  left: 50%; transform: translateX(-50%);
+  display: none;
+  padding: 10px 20px;
+  font-size: 18px; border: none;
+  background: #fff; border-radius: 8px;
+  cursor: pointer; z-index: 11;
+}
+
+/* 倒计时 */
+.countdown {
+  position: absolute; top: 45%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 72px; color: #fff; z-index: 11;
+}
+
+/* 结果提示 */
+#result {
+  position: absolute; top: 45%; left: 50%;
+  transform: translate(-50%, -60%);
+  font-size: 24px; color: #fff;
+  background: rgba(0,0,0,0.5);
+  padding: 8px 20px; border-radius: 8px;
+  z-index: 11;
+
+  /* 强制单行显示，不折行 */
+  white-space: nowrap;
+
+  /* 可选：如果文字宽度超过屏幕，加省略号 */
+  /* overflow: hidden; text-overflow: ellipsis; */
+}
+
+/* ---------- 底部广告栏 (z-index:20) ---------- */
+#adBanner {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  width: 100%; height: 60px;
+  background-image: url('assets/ad-320x60.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  pointer-events: auto;
+  z-index: 20;
+}
+
+/* Retina 2x 图 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  #adBanner {
+    background-image: url('assets/ad-640x120.png');
+  }
+}
