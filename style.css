@@ -1,156 +1,46 @@
-// script.js
-
-// ----- 配置区 -----
-const maxLevel = 5;          // 总关卡数，按实际修改
-let levelOrder = [];         // 随机后的关卡序列
-let orderIndex = 0;          // 当前在序列中的索引
-
-// 全局游戏变量
-let playerScore      = 0,
-    cpuScore         = 0,
-    roundEnded       = false,
-    winTarget        = 3,
-    soundOn          = false,
-    level            = 1,
-    stageVisualIndex = 1,
-    countdownActive  = true;
-
-let audioBgm;
-
-// ----- 初始化 -----
-function initGame(){
-  // 洗牌生成不重复关卡序列
-  levelOrder = Array.from({length: maxLevel}, (_, i) => i + 1);
-  for(let i = levelOrder.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [levelOrder[i], levelOrder[j]] = [levelOrder[j], levelOrder[i]];
-  }
-  orderIndex = 0;
-  level = levelOrder[orderIndex];
-
-  // BGM 初始化
-  audioBgm = document.getElementById('audioBgm');
-  audioBgm.loop  = true;
-  audioBgm.muted = true;
-  audioBgm.play().catch(()=>{});
-
-  updateAssets();
-  startCountdown();
+/* ---------- 全局重置 ---------- */
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  font-family: sans-serif;
 }
 
-// ----- 切换音效 -----
-function toggleSound(){
-  soundOn = !soundOn;
-  document.getElementById('soundToggle').innerText = soundOn ? '🔊' : '🔇';
-  document.getElementById('soundHint').style.display = soundOn ? 'none' : 'block';
-  audioBgm.muted = !soundOn;
+/* ---------- 背景層 (z-index:0) ---------- */
+.background-layer {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0;
+}
+.background-layer video,
+.background-layer img {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  pointer-events: none;
 }
 
-// ----- 播放音效 -----
-function playSound(id){
-  if(!soundOn) return;
-  const a = document.getElementById(id);
-  a.currentTime = 0;
-  a.play().catch(()=>{});
+/* ---------- 角色層 (z-index:1) ---------- */
+.character-layer {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 1;
+}
+.character-layer video,
+.character-layer img {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
 }
 
-// ----- 更新素材 & 显示第几关 -----
-function updateAssets(){
-  // 加载背景 & 角色（省略：同之前逻辑）
-  // …
-
-  // 更新“第几关”
-  document.getElementById('sequenceDisplay').innerText = orderIndex + 1;
+/* ---------- UI層 (z-index:10) ---------- */
+.ui-layer {
+  position: relative; z-index: 10; height: 100vh;
 }
 
-// ----- 倒计时 -----
-function startCountdown(){
-  countdownActive = true;
-  roundEnded = true;
-  document.getElementById('result').innerText = '';
-  const cd = document.getElementById('countdown');
-  let t = 3; cd.innerText = t; cd.style.display = 'block';
-  const iv = setInterval(()=>{
-    if(--t > 0){
-      cd.innerText = t;
-    } else {
-      clearInterval(iv);
-      cd.style.display = 'none';
-      document.querySelectorAll('.cpu-hands img, .player-hands img')
-        .forEach(el => el.style.visibility = 'visible');
-      document.getElementById('result').innerText = '請出拳！';
-      countdownActive = false;
-      roundEnded = false;
-    }
-  }, 500);
-}
-
-// ----- 出拳逻辑 -----
-function play(playerMove){
-  if(countdownActive || roundEnded) return;
-  playSound('audioClick');
-
-  // 玩家 & CPU 动画（省略：同之前逻辑）
-  // …
-
-  // 判定胜负并更新分数
-  let res = '';
-  // … 判定逻辑 …
-  document.getElementById('result').innerText = res;
-  playSound(res.startsWith('你贏') ? 'audioWin' : 'audioLose');
-
-  // 显示“继续”按钮
-  roundEnded = true;
-  document.getElementById('continue').style.display = 'block';
-}
-
-// ----- 继续 / 下一关 / 重来 -----
-function resetRound(){
-  const btn = document.getElementById('continue');
-  btn.style.display = 'none';
-
-  // 失败：本关重来
-  if(cpuScore >= winTarget){
-    playerScore = cpuScore = 0;
-    stageVisualIndex = 1;
-    updateAssets();
-    document.getElementById('result').innerText = '💀 重新開始';
-    return startCountdown();
-  }
-
-  // 胜利：进入下一个随机关卡
-  if(playerScore >= winTarget){
-    orderIndex++;
-    if(orderIndex < levelOrder.length){
-      level = levelOrder[orderIndex];
-      playerScore = cpuScore = 0;
-      stageVisualIndex = 1;
-      updateAssets();
-      document.getElementById('result').innerText = `🎉 前往第 ${orderIndex + 1} 關`;
-      return startCountdown();
-    } else {
-      // 全部打完 → 通关
-      document.getElementById('result').innerText = '🎊 恭喜破關！';
-      btn.innerText = '重新開始';
-      btn.onclick = () => {
-        initGame();
-        btn.onclick = resetRound;
-        btn.style.display = 'none';
-      };
-      btn.style.display = 'block';
-      return;
-    }
-  }
-
-  // 常规下一轮
-  document.querySelectorAll('.cpu-hands img, .player-hands img')
-    .forEach(el => el.style.visibility = 'visible');
-  document.getElementById('result').innerText = '請等待倒數...';
-  startCountdown();
-}
-
-// 暴露给 HTML
-window.initGame    = initGame;
-window.toggleSound = toggleSound;
-window.play        = play;
-window.resetRound  = resetRound;
+/* 音效開關 */
+#soundToggle {
+  position: fixed; top: 20px; right: 20px; z
