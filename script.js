@@ -2,7 +2,7 @@
 
 // ----- 配置区 -----
 // 你总共有多少关卡？请按实际数目修改
-const maxLevel = 3;
+const maxLevel = 5;
 // 每局游戏随机后的关卡顺序
 let levelOrder = [];
 // 当前在顺序数组中的索引
