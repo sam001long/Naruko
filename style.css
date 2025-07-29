@@ -1,158 +1,156 @@
-/* ---------- 全局重置 ---------- */
-body, html {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  height: 100%;
-  font-family: sans-serif;
-}
+// script.js
 
-/* ---------- 背景层 (z-index:0) ---------- */
-.background-layer {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  z-index: 0;
-}
-.background-layer video,
-.background-layer img {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  pointer-events: none;
-}
+// ----- 配置区 -----
+const maxLevel = 5;          // 总关卡数，按实际修改
+let levelOrder = [];         // 随机后的关卡序列
+let orderIndex = 0;          // 当前在序列中的索引
 
-/* ---------- 角色层 (z-index:1) ---------- */
-.character-layer {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  z-index: 1;
-}
-.character-layer video,
-.character-layer img {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 100%; max-height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-}
+// 全局游戏变量
+let playerScore      = 0,
+    cpuScore         = 0,
+    roundEnded       = false,
+    winTarget        = 3,
+    soundOn          = false,
+    level            = 1,
+    stageVisualIndex = 1,
+    countdownActive  = true;
 
-/* ---------- UI 层 (z-index:10) ---------- */
-.ui-layer {
-  position: relative;
-  z-index: 10;
-  height: 100vh;
-}
+let audioBgm;
 
-/* 音效开关 */
-#soundToggle {
-  position: fixed; top: 20px; right: 20px; z-index: 11;
-  font-size: 24px;
-  background: rgba(255,255,255,0.8);
-  border-radius: 50%; width: 40px; height: 40px;
-  border: none; cursor: pointer;
-}
-.sound-hint {
-  position: fixed; top: 70px; right: 20px; z-index: 11;
-  color: #fff; font-size: 14px;
-}
-
-/* 记分板 */
-.scoreboard {
-  position: absolute; top: 20px; left: 50%;
-  transform: translateX(-50%);
-  font-size: 18px; color: #fff;
-  background: rgba(0,0,0,0.5);
-  padding: 5px 10px; border-radius: 5px;
-  white-space: nowrap; z-index: 11;
-}
-
-/* CPU 出拳 */
-.cpu-hands {
-  position: absolute; top: 25%; left: 50%;
-  transform: translateX(-50%);
-  display: flex; gap: 20px; z-index: 11;
-}
-.cpu-hands img {
-  width: 80px; height: 80px; cursor: default;
-}
-
-/* 玩家 出拳（抬高避免被广告挡） */
-.player-hands {
-  position: absolute;
-  bottom: calc(60px + 140px);
-  left: 50%; transform: translateX(-50%);
-  display: flex; gap: 20px; z-index: 11;
-}
-.player-hands img {
-  width: 80px; height: 80px;
-  cursor: pointer; transition: transform .1s ease;
-}
-
-/* 缩放动画 */
-@keyframes scale-punch {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.6); }
-  100% { transform: scale(1); }
-}
-.scale {
-  animation: scale-punch .3s ease-in-out;
-}
-
-/* 继续按钮（抬高避免被广告挡） */
-#continue {
-  position: absolute;
-  bottom: calc(60px + 80px);
-  left: 50%; transform: translateX(-50%);
-  display: none;
-  padding: 10px 20px;
-  font-size: 18px; border: none;
-  background: #fff; border-radius: 8px;
-  cursor: pointer; z-index: 11;
-}
-
-/* 倒计时 */
-.countdown {
-  position: absolute; top: 45%; left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 72px; color: #fff; z-index: 11;
-}
-
-/* 结果提示 */
-#result {
-  position: absolute; top: 45%; left: 50%;
-  transform: translate(-50%, -60%);
-  font-size: 24px; color: #fff;
-  background: rgba(0,0,0,0.5);
-  padding: 8px 20px; border-radius: 8px;
-  z-index: 11;
-
-  /* 强制单行显示，不折行 */
-  white-space: nowrap;
-
-  /* 可选：如果文字宽度超过屏幕，加省略号 */
-  /* overflow: hidden; text-overflow: ellipsis; */
-}
-
-/* ---------- 底部广告栏 (z-index:20) ---------- */
-#adBanner {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  width: 100%; height: 60px;
-  background-image: url('assets/ad-320x60.png');
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: cover;
-  pointer-events: auto;
-  z-index: 20;
-}
-
-/* Retina 2x 图 */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  #adBanner {
-    background-image: url('assets/ad-640x120.png');
+// ----- 初始化 -----
+function initGame(){
+  // 洗牌生成不重复关卡序列
+  levelOrder = Array.from({length: maxLevel}, (_, i) => i + 1);
+  for(let i = levelOrder.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [levelOrder[i], levelOrder[j]] = [levelOrder[j], levelOrder[i]];
   }
+  orderIndex = 0;
+  level = levelOrder[orderIndex];
+
+  // BGM 初始化
+  audioBgm = document.getElementById('audioBgm');
+  audioBgm.loop  = true;
+  audioBgm.muted = true;
+  audioBgm.play().catch(()=>{});
+
+  updateAssets();
+  startCountdown();
 }
+
+// ----- 切换音效 -----
+function toggleSound(){
+  soundOn = !soundOn;
+  document.getElementById('soundToggle').innerText = soundOn ? '🔊' : '🔇';
+  document.getElementById('soundHint').style.display = soundOn ? 'none' : 'block';
+  audioBgm.muted = !soundOn;
+}
+
+// ----- 播放音效 -----
+function playSound(id){
+  if(!soundOn) return;
+  const a = document.getElementById(id);
+  a.currentTime = 0;
+  a.play().catch(()=>{});
+}
+
+// ----- 更新素材 & 显示第几关 -----
+function updateAssets(){
+  // 加载背景 & 角色（省略：同之前逻辑）
+  // …
+
+  // 更新“第几关”
+  document.getElementById('sequenceDisplay').innerText = orderIndex + 1;
+}
+
+// ----- 倒计时 -----
+function startCountdown(){
+  countdownActive = true;
+  roundEnded = true;
+  document.getElementById('result').innerText = '';
+  const cd = document.getElementById('countdown');
+  let t = 3; cd.innerText = t; cd.style.display = 'block';
+  const iv = setInterval(()=>{
+    if(--t > 0){
+      cd.innerText = t;
+    } else {
+      clearInterval(iv);
+      cd.style.display = 'none';
+      document.querySelectorAll('.cpu-hands img, .player-hands img')
+        .forEach(el => el.style.visibility = 'visible');
+      document.getElementById('result').innerText = '請出拳！';
+      countdownActive = false;
+      roundEnded = false;
+    }
+  }, 500);
+}
+
+// ----- 出拳逻辑 -----
+function play(playerMove){
+  if(countdownActive || roundEnded) return;
+  playSound('audioClick');
+
+  // 玩家 & CPU 动画（省略：同之前逻辑）
+  // …
+
+  // 判定胜负并更新分数
+  let res = '';
+  // … 判定逻辑 …
+  document.getElementById('result').innerText = res;
+  playSound(res.startsWith('你贏') ? 'audioWin' : 'audioLose');
+
+  // 显示“继续”按钮
+  roundEnded = true;
+  document.getElementById('continue').style.display = 'block';
+}
+
+// ----- 继续 / 下一关 / 重来 -----
+function resetRound(){
+  const btn = document.getElementById('continue');
+  btn.style.display = 'none';
+
+  // 失败：本关重来
+  if(cpuScore >= winTarget){
+    playerScore = cpuScore = 0;
+    stageVisualIndex = 1;
+    updateAssets();
+    document.getElementById('result').innerText = '💀 重新開始';
+    return startCountdown();
+  }
+
+  // 胜利：进入下一个随机关卡
+  if(playerScore >= winTarget){
+    orderIndex++;
+    if(orderIndex < levelOrder.length){
+      level = levelOrder[orderIndex];
+      playerScore = cpuScore = 0;
+      stageVisualIndex = 1;
+      updateAssets();
+      document.getElementById('result').innerText = `🎉 前往第 ${orderIndex + 1} 關`;
+      return startCountdown();
+    } else {
+      // 全部打完 → 通关
+      document.getElementById('result').innerText = '🎊 恭喜破關！';
+      btn.innerText = '重新開始';
+      btn.onclick = () => {
+        initGame();
+        btn.onclick = resetRound;
+        btn.style.display = 'none';
+      };
+      btn.style.display = 'block';
+      return;
+    }
+  }
+
+  // 常规下一轮
+  document.querySelectorAll('.cpu-hands img, .player-hands img')
+    .forEach(el => el.style.visibility = 'visible');
+  document.getElementById('result').innerText = '請等待倒數...';
+  startCountdown();
+}
+
+// 暴露给 HTML
+window.initGame    = initGame;
+window.toggleSound = toggleSound;
+window.play        = play;
+window.resetRound  = resetRound;
