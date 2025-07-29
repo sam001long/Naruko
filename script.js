@@ -191,16 +191,13 @@ function resetRound() {
   const btn = document.getElementById('continue');
   btn.style.display = 'none';
 
-  // 如果电脑先赢 3 把，本关重来
+  // 失败：回到第一关并重头开始
   if (cpuScore >= winTarget) {
-    playerScore = cpuScore = 0;
-    stageVisualIndex = 1;
-    updateAssets();
-    document.getElementById('result').innerText = '💀 重新開始';
-    return startCountdown();
+    document.getElementById('result').innerText = '💀 挑戰失敗，回到第 1 關';
+    return initGame();
   }
 
-  // 如果玩家先赢 3 把，进入下一个随机关卡
+  // 胜利：进入下一个随机关卡
   if (playerScore >= winTarget) {
     orderIndex++;
     if (orderIndex < levelOrder.length) {
@@ -211,7 +208,7 @@ function resetRound() {
       document.getElementById('result').innerText = `🎉 前往第 ${orderIndex + 1} 關`;
       return startCountdown();
     } else {
-      // 已打完所有关卡 → 通关
+      // 全部打完 → 通关
       document.getElementById('result').innerText = '🎊 恭喜破關！';
       btn.innerText = '重新開始';
       btn.onclick = () => {
@@ -224,7 +221,7 @@ function resetRound() {
     }
   }
 
-  // 其他情况：本轮未分胜负，继续倒计时
+  // 常规下一轮
   document.querySelectorAll('.player-hands img, .cpu-hands img')
     .forEach(el => el.style.visibility = 'visible');
   document.getElementById('result').innerText = '請等待倒數...';
