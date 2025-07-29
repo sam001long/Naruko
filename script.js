@@ -1,5 +1,14 @@
 // script.js
 
+// ----- 配置区 -----
+// 你总共有多少关卡？请按实际数目修改
+const maxLevel = 3;
+// 每局游戏随机后的关卡顺序
+let levelOrder = [];
+// 当前在顺序数组中的索引
+let orderIndex = 0;
+
+// 以下是全局游戏变量
 let playerScore      = 0,
     cpuScore         = 0,
     roundEnded       = false,
@@ -7,25 +16,55 @@ let playerScore      = 0,
     soundOn          = false,
     level            = 1,
     stageVisualIndex = 1,
-    maxStage         = 4,
-    maxLevel         = 3,
     countdownActive  = true;
 
 let audioBgm;
 
-// 初始化
+// ----- 初始化函数 -----
 function initGame(){
-  // 取 BGM 元素并初始化
+  // 1. 生成 [1,2,…,maxLevel]
+  levelOrder = Array.from({length: maxLevel}, (_, i) => i + 1);
+  // 2. Fisher–Yates 随机打乱
+  for(let i = levelOrder.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [levelOrder[i], levelOrder[j]] = [levelOrder[j], levelOrder[i]];
+  }
+  // 3. 从头开始
+  orderIndex = 0;
+  level = levelOrder[orderIndex];
+
+  // 背景音乐初始化
   audioBgm = document.getElementById('audioBgm');
   audioBgm.loop = true;
   audioBgm.muted = true;
-  audioBgm.play().catch(()=>{}); // 静音自动 play 以便后续 unmuted 时能立即听到
+  audioBgm.play().catch(()=>{});
 
+  // 加载当前关卡素材并开始倒计时
   updateAssets();
   startCountdown();
 }
 
-// 更新背景 & 角色（支持 MP4 或回退圖片）
+// ----- 切换静音/有声 -----
+function toggleSound(){
+  soundOn = !soundOn;
+  const btn  = document.getElementById('soundToggle');
+  const hint = document.getElementById('soundHint');
+
+  btn.innerText = soundOn ? '🔊' : '🔇';
+  hint.style.display = soundOn ? 'none' : 'block';
+
+  audioBgm.muted = !soundOn;
+}
+
+// ----- 播放音效 -----
+function playSound(id){
+  if(!soundOn) return;
+  const a = document.getElementById(id);
+  a.currentTime = 0;
+  a.play().catch(()=>{});
+}
+
+// ----- 更新背景与角色素材 -----
 function updateAssets(){
   const base = `assets/levels/level${level}/stage${stageVisualIndex}`;
 
@@ -59,33 +98,11 @@ function updateAssets(){
     imgCh.style.display   = 'block';
   };
 
-  // 更新關卡顯示
+  // 更新关卡显示
   document.getElementById('levelDisplay').innerText = level;
 }
 
-// 播放音效（点击、胜利、失败）
-function playSound(id){
-  if(!soundOn) return;
-  const a = document.getElementById(id);
-  if(!a) return;
-  a.currentTime = 0;
-  a.play().catch(()=>{});
-}
-
-// 切換靜音/有聲
-function toggleSound(){
-  soundOn = !soundOn;
-  const btn = document.getElementById('soundToggle');
-  const hint = document.getElementById('soundHint');
-
-  btn.innerText = soundOn ? '🔊' : '🔇';
-  hint.style.display = soundOn ? 'none' : 'block';
-
-  // 只用 muted 控制，不 pause
-  audioBgm.muted = !soundOn;
-}
-
-// 倒計時（0.5s 一次，共 3 次）
+// ----- 倒计时逻辑 -----
 function startCountdown(){
   countdownActive = true;
   roundEnded = true;
@@ -98,7 +115,6 @@ function startCountdown(){
     } else {
       clearInterval(iv);
       cd.style.display = 'none';
-      // 恢復所有拳頭可見
       document.querySelectorAll('.cpu-hands img, .player-hands img').forEach(el=>{
         el.style.visibility = 'visible';
       });
@@ -109,16 +125,16 @@ function startCountdown(){
   }, 500);
 }
 
-// 玩家出拳
+// ----- 玩家出拳 -----
 function play(playerMove){
   if(countdownActive || roundEnded) return;
 
-  // 点击音效
   playSound('audioClick');
 
   // 玩家动画
   document.querySelectorAll('.player-hands img').forEach(el=>{
-    if(el.getAttribute('onclick')===`play('${playerMove}')`){
+    const cmd = `play('${playerMove}')`;
+    if(el.getAttribute('onclick').includes(cmd)){
       el.style.visibility = 'visible';
       el.classList.add('scale');
     } else {
@@ -139,7 +155,7 @@ function play(playerMove){
     }
   });
 
-  // 动画结束移除
+  // 移除动画
   setTimeout(()=>{
     document.querySelectorAll('.player-hands img, .cpu-hands img').forEach(el=>{
       el.classList.remove('scale');
@@ -151,18 +167,19 @@ function play(playerMove){
   if(playerMove===cpuMove){
     res = '平手！';
   } else if(
-    (playerMove==='rock'     && cpuMove==='scissors')||
-    (playerMove==='scissors' && cpuMove==='paper')   ||
+    (playerMove==='rock'     && cpuMove==='scissors') ||
+    (playerMove==='scissors' && cpuMove==='paper')    ||
     (playerMove==='paper'    && cpuMove==='rock')
   ){
-    res = '你贏了！'; playerScore++;
-    stageVisualIndex = Math.min(1+playerScore, maxStage);
+    res = '你贏了！';
+    playerScore++;
+    stageVisualIndex = Math.min(1 + playerScore, maxLevel);
   } else {
-    res = '你輸了！'; cpuScore++;
+    res = '你輸了！';
+    cpuScore++;
     stageVisualIndex = 1;
   }
 
-  // 更新分數與提示
   document.getElementById('playerScore').innerText = playerScore;
   document.getElementById('cpuScore').innerText    = cpuScore;
   document.getElementById('result').innerText      = res;
@@ -170,74 +187,68 @@ function play(playerMove){
 
   updateAssets();
 
-  // 顯示按鈕
+  // 显示继续/下一关/重来按钮
   roundEnded = true;
   const btn = document.getElementById('continue');
-  if(playerScore>=winTarget)   btn.innerText='進入下一關';
-  else if(cpuScore>=winTarget) btn.innerText='重新開始';
-  else                          btn.innerText='繼續';
-  btn.style.display='block';
+  if(cpuScore >= winTarget){
+    btn.innerText = '重新開始';
+  } else {
+    btn.innerText = '繼續';
+  }
+  btn.style.display = 'block';
 }
 
-// 處理繼續/進關/重新開始
+// ----- 处理继续 / 下一关 / 重新开始 -----
 function resetRound(){
   const btn = document.getElementById('continue');
-  btn.style.display='none';
+  btn.style.display = 'none';
 
-  // 電腦三勝 → 重置
-  if(cpuScore>=winTarget){
-    level=1; playerScore=0; cpuScore=0; stageVisualIndex=1;
+  // 输掉这一局：直接回合重来（本关不变）
+  if(cpuScore >= winTarget){
+    playerScore = cpuScore = 0;
+    stageVisualIndex = 1;
     updateAssets();
-    document.querySelectorAll('.cpu-hands img, .player-hands img').forEach(el=>{
-      el.style.visibility='visible';
-    });
-    document.getElementById('playerScore').innerText=0;
-    document.getElementById('cpuScore').innerText=0;
-    document.getElementById('result').innerText='💀 重新開始';
+    document.getElementById('playerScore').innerText = 0;
+    document.getElementById('cpuScore').innerText    = 0;
+    document.getElementById('result').innerText      = '💀 重新開始';
     return startCountdown();
   }
 
-  // 玩家三勝
-  if(playerScore>=winTarget){
-    if(level<maxLevel){
-      // 升關
-      level++;
-      playerScore=0; cpuScore=0; stageVisualIndex=1;
+  // 赢掉这一局：进入下一个洗牌关卡
+  if(playerScore >= winTarget){
+    orderIndex++;
+    if(orderIndex < levelOrder.length){
+      level = levelOrder[orderIndex];
+      playerScore = cpuScore = 0;
+      stageVisualIndex = 1;
       updateAssets();
-      document.getElementById('playerScore').innerText=0;
-      document.getElementById('cpuScore').innerText=0;
-      document.getElementById('result').innerText=`🎉 進入第${level}關`;
+      document.getElementById('playerScore').innerText = 0;
+      document.getElementById('cpuScore').innerText    = 0;
+      document.getElementById('result').innerText      = `🎉 前往第 ${level} 關`;
       return startCountdown();
     } else {
-      // 通關
+      // 全部关卡打完 → 通关
       document.getElementById('result').innerText = '🎊 恭喜破關！';
       btn.innerText = '重新開始';
-      btn.onclick = ()=>{
-        level=1; playerScore=0; cpuScore=0; stageVisualIndex=1;
-        updateAssets();
-        document.querySelectorAll('.cpu-hands img, .player-hands img').forEach(el=>{
-          el.style.visibility='visible';
-        });
-        document.getElementById('playerScore').innerText=0;
-        document.getElementById('cpuScore').innerText=0;
-        btn.innerText='繼續';
-        btn.onclick=resetRound;
-        startCountdown();
+      btn.onclick = () => {
+        initGame();
+        btn.onclick = resetRound;
+        btn.style.display = 'none';
       };
-      btn.style.display='block';
+      btn.style.display = 'block';
       return;
     }
   }
 
-  // 常規下一輪
+  // 常规回合（未分胜负）
   document.querySelectorAll('.cpu-hands img, .player-hands img').forEach(el=>{
-    el.style.visibility='visible';
+    el.style.visibility = 'visible';
   });
-  document.getElementById('result').innerText='請等待倒數...';
+  document.getElementById('result').innerText = '請等待倒數...';
   startCountdown();
 }
 
-// 暴露給 HTML
+// 供 HTML 调用
 window.initGame    = initGame;
 window.toggleSound = toggleSound;
 window.play        = play;
