@@ -27,8 +27,7 @@ function initGame() {
   }
   orderIndex = 0;
   level = levelOrder[orderIndex];
-  playerScore = 0;
-  cpuScore = 0;
+  playerScore = cpuScore = 0;
   stageVisualIndex = 1;
 
   // BGM 初始化
@@ -37,6 +36,7 @@ function initGame() {
   audioBgm.muted = true;
   audioBgm.play().catch(() => {});
 
+  // 更新界面并倒计时
   updateAssets();
   startCountdown();
 }
@@ -91,11 +91,10 @@ function updateAssets() {
     imgCh.style.display = 'block';
   };
 
-  // 更新“第几关”
+  // 更新“第几关”与分数
   document.getElementById('sequenceDisplay').innerText = orderIndex + 1;
-  // 更新分数
-  document.getElementById('playerScore').innerText = playerScore;
-  document.getElementById('cpuScore').innerText = cpuScore;
+  document.getElementById('playerScore').innerText      = playerScore;
+  document.getElementById('cpuScore').innerText         = cpuScore;
 }
 
 // ----- 倒计时 -----
@@ -131,12 +130,8 @@ function play(playerMove) {
   // 玩家动画
   document.querySelectorAll('.player-hands img').forEach(el => {
     const move = el.alt.toLowerCase();
-    if (move === playerMove) {
-      el.style.visibility = 'visible';
-      el.classList.add('scale');
-    } else {
-      el.style.visibility = 'hidden';
-    }
+    el.style.visibility = (move === playerMove) ? 'visible' : 'hidden';
+    if (move === playerMove) el.classList.add('scale');
   });
 
   // CPU 随机出拳
@@ -144,12 +139,8 @@ function play(playerMove) {
   const cpuMove = moves[Math.floor(Math.random() * 3)];
   document.querySelectorAll('.cpu-hands img').forEach(el => {
     const move = el.alt.toLowerCase();
-    if (move === cpuMove) {
-      el.style.visibility = 'visible';
-      el.classList.add('scale');
-    } else {
-      el.style.visibility = 'hidden';
-    }
+    el.style.visibility = (move === cpuMove) ? 'visible' : 'hidden';
+    if (move === cpuMove) el.classList.add('scale');
   });
 
   // 移除动画 class
@@ -189,16 +180,17 @@ function play(playerMove) {
 // ----- 继续 / 下一关 / 重来 -----
 function resetRound() {
   const btn = document.getElementById('continue');
-  btn.style.display = 'none';
 
-  // 失败：回到第一关并重头开始
+  // 失败：立即重置至第1关
   if (cpuScore >= winTarget) {
-    document.getElementById('result').innerText = '💀 挑戰失敗，回到第 1 關';
+    btn.style.display = 'none';
+    document.getElementById('result').innerText = '💀 挑戰失敗，重頭開始';
     return initGame();
   }
 
-  // 胜利：进入下一个随机关卡
+  // 胜利：进入下一随机关卡
   if (playerScore >= winTarget) {
+    btn.style.display = 'none';
     orderIndex++;
     if (orderIndex < levelOrder.length) {
       level = levelOrder[orderIndex];
@@ -208,20 +200,21 @@ function resetRound() {
       document.getElementById('result').innerText = `🎉 前往第 ${orderIndex + 1} 關`;
       return startCountdown();
     } else {
-      // 全部打完 → 通关
+      // 通关
       document.getElementById('result').innerText = '🎊 恭喜破關！';
       btn.innerText = '重新開始';
       btn.onclick = () => {
-        initGame();
         btn.onclick = resetRound;
         btn.style.display = 'none';
+        initGame();
       };
       btn.style.display = 'block';
       return;
     }
   }
 
-  // 常规下一轮
+  // 普通下一轮
+  btn.style.display = 'none';
   document.querySelectorAll('.player-hands img, .cpu-hands img')
     .forEach(el => el.style.visibility = 'visible');
   document.getElementById('result').innerText = '請等待倒數...';
@@ -229,7 +222,7 @@ function resetRound() {
 }
 
 // 暴露给 HTML
-window.initGame = initGame;
+window.initGame    = initGame;
 window.toggleSound = toggleSound;
-window.play = play;
-window.resetRound = resetRound;
+window.play        = play;
+window.resetRound  = resetRound;
