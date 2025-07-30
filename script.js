@@ -36,7 +36,6 @@ function initGame() {
   audioBgm.muted = true;
   audioBgm.play().catch(() => {});
 
-  // 更新界面并倒计时
   updateAssets();
   startCountdown();
 }
@@ -129,18 +128,24 @@ function play(playerMove) {
 
   // 玩家动画
   document.querySelectorAll('.player-hands img').forEach(el => {
-    const move = el.alt.toLowerCase();
-    el.style.visibility = (move === playerMove) ? 'visible' : 'hidden';
-    if (move === playerMove) el.classList.add('scale');
+    if (el.src.includes(`${playerMove}.png`)) {
+      el.style.visibility = 'visible';
+      el.classList.add('scale');
+    } else {
+      el.style.visibility = 'hidden';
+    }
   });
 
   // CPU 随机出拳
   const moves = ['rock', 'paper', 'scissors'];
   const cpuMove = moves[Math.floor(Math.random() * 3)];
   document.querySelectorAll('.cpu-hands img').forEach(el => {
-    const move = el.alt.toLowerCase();
-    el.style.visibility = (move === cpuMove) ? 'visible' : 'hidden';
-    if (move === cpuMove) el.classList.add('scale');
+    if (el.src.includes(`${cpuMove}.png`)) {
+      el.style.visibility = 'visible';
+      el.classList.add('scale');
+    } else {
+      el.style.visibility = 'hidden';
+    }
   });
 
   // 移除动画 class
