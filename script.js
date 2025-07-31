@@ -1,7 +1,7 @@
 // script.js
 
 // ----- 配置区 -----
-const maxLevel = 5;       // 总关卡数，请按实际修改
+const maxLevel = 8;       // 总关卡数，请按实际修改
 let levelOrder = [];      // 随机关卡序列
 let orderIndex = 0;       // 当前序列索引
 
