@@ -17,9 +17,19 @@ let countdownActive  = true;
 
 let audioBgm;
 
+// 加权随机函数
+function weightedRandom(weights) {
+  const entries = Object.entries(weights);
+  const total   = entries.reduce((sum, [, w]) => sum + w, 0);
+  let r = Math.random() * total;
+  for (const [move, w] of entries) {
+    if (r < w) return move;
+    r -= w;
+  }
+}
+
 // ----- 初始化 -----
 function initGame() {
-  // 生成并洗牌关卡序列
   levelOrder = Array.from({ length: maxLevel }, (_, i) => i + 1);
   for (let i = levelOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -30,7 +40,6 @@ function initGame() {
   playerScore = cpuScore = 0;
   stageVisualIndex = 1;
 
-  // BGM 初始化
   audioBgm = document.getElementById('audioBgm');
   audioBgm.loop = true;
   audioBgm.muted = true;
@@ -56,41 +65,41 @@ function playSound(id) {
   a.play().catch(() => {});
 }
 
-// ----- 更新背景/角色 & “第几关”序号 -----
+// ----- 更新背景/角色 & 分数/关卡 -----
 function updateAssets() {
   const base = `assets/levels/level${level}/stage${stageVisualIndex}`;
 
   // 背景
   const videoBg = document.getElementById('backgroundVideo');
-  const imgBg = document.getElementById('backgroundImage');
+  const imgBg   = document.getElementById('backgroundImage');
   videoBg.src = `${base}/background.mp4`;
   videoBg.load();
   videoBg.onloadeddata = () => {
-    imgBg.style.display = 'none';
+    imgBg.style.display   = 'none';
     videoBg.style.display = 'block';
   };
   videoBg.onerror = () => {
     videoBg.style.display = 'none';
-    imgBg.src = `${base}/background.jpg`;
-    imgBg.style.display = 'block';
+    imgBg.src             = `${base}/background.jpg`;
+    imgBg.style.display   = 'block';
   };
 
   // 角色
   const videoCh = document.getElementById('characterVideo');
-  const imgCh = document.getElementById('characterImage');
+  const imgCh   = document.getElementById('characterImage');
   videoCh.src = `${base}/character.mp4`;
   videoCh.load();
   videoCh.onloadeddata = () => {
-    imgCh.style.display = 'none';
+    imgCh.style.display   = 'none';
     videoCh.style.display = 'block';
   };
   videoCh.onerror = () => {
     videoCh.style.display = 'none';
-    imgCh.src = `${base}/character.png`;
-    imgCh.style.display = 'block';
+    imgCh.src             = `${base}/character.png`;
+    imgCh.style.display   = 'block';
   };
 
-  // 更新“第几关”与分数
+  // 更新 UI
   document.getElementById('sequenceDisplay').innerText = orderIndex + 1;
   document.getElementById('playerScore').innerText      = playerScore;
   document.getElementById('cpuScore').innerText         = cpuScore;
@@ -123,7 +132,6 @@ function startCountdown() {
 // ----- 玩家出拳 -----
 function play(playerMove) {
   if (countdownActive || roundEnded) return;
-
   playSound('audioClick');
 
   // 玩家动画
@@ -136,9 +144,13 @@ function play(playerMove) {
     }
   });
 
-  // CPU 随机出拳
-  const moves = ['rock', 'paper', 'scissors'];
-  const cpuMove = moves[Math.floor(Math.random() * 3)];
+  // CPU 加权出拳（示例：关卡≥5时 Paper 概率加倍）
+  const biased = level >= 5;
+  const weights = biased
+    ? { rock:1, paper:2, scissors:1 }
+    : { rock:1, paper:1, scissors:1 };
+  const cpuMove = weightedRandom(weights);
+
   document.querySelectorAll('.cpu-hands img').forEach(el => {
     if (el.src.includes(`${cpuMove}.png`)) {
       el.style.visibility = 'visible';
@@ -148,7 +160,6 @@ function play(playerMove) {
     }
   });
 
-  // 移除动画 class
   setTimeout(() => {
     document.querySelectorAll('.player-hands img, .cpu-hands img')
       .forEach(el => el.classList.remove('scale'));
@@ -159,25 +170,23 @@ function play(playerMove) {
   if (playerMove === cpuMove) {
     res = '平手！';
   } else if (
-    (playerMove === 'rock' && cpuMove === 'scissors') ||
-    (playerMove === 'scissors' && cpuMove === 'paper') ||
-    (playerMove === 'paper' && cpuMove === 'rock')
+    (playerMove==='rock'     && cpuMove==='scissors') ||
+    (playerMove==='scissors' && cpuMove==='paper')    ||
+    (playerMove==='paper'    && cpuMove==='rock')
   ) {
-    res = '你贏了！';
+    res = '你贏啦！';
     playerScore++;
     stageVisualIndex = Math.min(stageVisualIndex + 1, maxLevel);
   } else {
-    res = '你輸了！';
+    res = '你輸囉！再來!';
     cpuScore++;
     stageVisualIndex = 1;
   }
 
   document.getElementById('result').innerText = res;
   playSound(res.startsWith('你贏') ? 'audioWin' : 'audioLose');
-
   updateAssets();
 
-  // 显示继续按钮
   roundEnded = true;
   document.getElementById('continue').style.display = 'block';
 }
@@ -186,26 +195,31 @@ function play(playerMove) {
 function resetRound() {
   const btn = document.getElementById('continue');
 
-  // 失败：立即重置至第1关
+  // 失败：显示“重新開始”按钮，需玩家手动点
   if (cpuScore >= winTarget) {
-    btn.style.display = 'none';
-    document.getElementById('result').innerText = '💀 挑戰失敗，重頭開始';
-    return initGame();
+    document.getElementById('result').innerText = '💀 挑戰失敗！';
+    btn.innerText = '重新開始';
+    btn.onclick = () => {
+      btn.onclick = resetRound;
+      btn.style.display = 'none';
+      initGame();
+    };
+    btn.style.display = 'block';
+    return;
   }
 
-  // 胜利：进入下一随机关卡
+  // 胜利：进入下一个关卡或通关
   if (playerScore >= winTarget) {
-    btn.style.display = 'none';
     orderIndex++;
+    btn.style.display = 'none';
     if (orderIndex < levelOrder.length) {
       level = levelOrder[orderIndex];
       playerScore = cpuScore = 0;
       stageVisualIndex = 1;
       updateAssets();
-      document.getElementById('result').innerText = `🎉 前往第 ${orderIndex + 1} 關`;
+      document.getElementById('result').innerText = `🎉 前往第 ${orderIndex+1} 關`;
       return startCountdown();
     } else {
-      // 通关
       document.getElementById('result').innerText = '🎊 恭喜破關！';
       btn.innerText = '重新開始';
       btn.onclick = () => {
@@ -218,7 +232,7 @@ function resetRound() {
     }
   }
 
-  // 普通下一轮
+  // 普通下一輪
   btn.style.display = 'none';
   document.querySelectorAll('.player-hands img, .cpu-hands img')
     .forEach(el => el.style.visibility = 'visible');
