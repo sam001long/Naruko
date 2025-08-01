@@ -1,10 +1,10 @@
 // script.js
 
 // ----- 配置区 -----
-const maxLevel = 8;       // 总关卡数，请按实际修改
-const winTarget = 3;      // 连赢几把算过关
-let levelOrder = [];      // 随机关卡序列
-let orderIndex = 0;       // 当前序列索引
+const maxLevel   = 8;   // 总关卡数，请按实际修改
+const winTarget  = 3;   // 连赢几把过关
+let levelOrder   = [];
+let orderIndex   = 0;
 
 // 全局状态
 let playerScore      = 0;
@@ -17,7 +17,7 @@ let countdownActive  = true;
 
 let audioBgm;
 
-// 加权随机函数
+// 加权随机工具
 function weightedRandom(weights) {
   const entries = Object.entries(weights);
   const total   = entries.reduce((sum, [, w]) => sum + w, 0);
@@ -55,7 +55,7 @@ function initGame() {
 function toggleSound() {
   soundOn = !soundOn;
   document.getElementById('soundToggle').innerText = soundOn ? '🔊' : '🔇';
-  document.getElementById('soundHint').style.display = soundOn ? 'none' : 'block';
+  document.getElementById('soundHint').style.display    = soundOn ? 'none' : 'block';
   audioBgm.muted = !soundOn;
 }
 
@@ -67,7 +67,7 @@ function playSound(id) {
   a.play().catch(() => {});
 }
 
-// ----- 更新背景/角色 & UI -----
+// ----- 更新背景/角色 & 分数/关卡 -----
 function updateAssets() {
   const base = `assets/levels/level${level}/stage${stageVisualIndex}`;
 
@@ -101,7 +101,7 @@ function updateAssets() {
     imgCh.style.display   = 'block';
   };
 
-  // 更新第几关与分数
+  // 更新 UI
   document.getElementById('sequenceDisplay').innerText = orderIndex + 1;
   document.getElementById('playerScore').innerText      = playerScore;
   document.getElementById('cpuScore').innerText         = cpuScore;
@@ -146,37 +146,43 @@ function play(playerMove) {
     }
   });
 
-  // CPU 出拳（加权示例：5 关后 paper 概率加倍）
-  const biased = level >= 5;
-  const weights = biased
-    ? { rock: 1, paper: 2, scissors: 1 }
-    : { rock: 1, paper: 1, scissors: 1 };
-  const cpuMove = weightedRandom(weights);
+  // CPU 出拳：一开始就有概率“放水”出现两拳相同
+  const p = 0.3;                 // 放水概率 30%
+  const biased = Math.random() < p;
+  let cpuChoices;
+  if (biased) {
+    // 随机选一个主拳，再选一个不同的副拳
+    const primary = weightedRandom({ rock:1, paper:1, scissors:1 });
+    const others  = ['rock','paper','scissors'].filter(m=>m!==primary);
+    const secondary = others[Math.floor(Math.random()*2)];
+    cpuChoices = [primary, primary, secondary];
+  } else {
+    cpuChoices = ['rock','paper','scissors'];
+  }
+  // 打乱顺序
+  cpuChoices.sort(() => Math.random() - 0.5);
 
-  // CPU 动画
-  document.querySelectorAll('.cpu-hands img').forEach(el => {
-    if (el.src.includes(`${cpuMove}.png`)) {
-      el.style.visibility = 'visible';
-      el.classList.add('scale');
-    } else {
-      el.style.visibility = 'hidden';
-    }
+  // 渲染到三个槽位
+  document.querySelectorAll('.cpu-hands img').forEach((el, idx) => {
+    const move = cpuChoices[idx];
+    el.src = `assets/${move}.png`;
+    el.style.visibility = 'visible';
+    el.classList.add('scale');
   });
-
-  // 移除动画标签
   setTimeout(() => {
-    document.querySelectorAll('.player-hands img, .cpu-hands img')
-      .forEach(el => el.classList.remove('scale'));
+    document.querySelectorAll('.cpu-hands img, .player-hands img')
+      .forEach(e=>e.classList.remove('scale'));
   }, 300);
 
-  // 判定胜负
+  // 判定胜负，以 cpuChoices[0] 为官方出拳
+  const cpuMove = cpuChoices[0];
   let res;
   if (playerMove === cpuMove) {
     res = '平手！';
   } else if (
-    (playerMove === 'rock'     && cpuMove === 'scissors') ||
-    (playerMove === 'scissors' && cpuMove === 'paper')    ||
-    (playerMove === 'paper'    && cpuMove === 'rock')
+    (playerMove==='rock'     && cpuMove==='scissors') ||
+    (playerMove==='scissors' && cpuMove==='paper')    ||
+    (playerMove==='paper'    && cpuMove==='rock')
   ) {
     res = '你贏了！';
     playerScore++;
@@ -199,7 +205,7 @@ function play(playerMove) {
 function resetRound() {
   const btn = document.getElementById('continue');
 
-  // 失败：显示“重新開始”
+  // 失败
   if (cpuScore >= winTarget) {
     document.getElementById('result').innerText = '💀 挑戰失敗！';
     btn.innerText = '重新開始';
@@ -212,7 +218,7 @@ function resetRound() {
     return;
   }
 
-  // 胜利：下一关或通关
+  // 胜利
   if (playerScore >= winTarget) {
     orderIndex++;
     btn.style.display = 'none';
@@ -238,8 +244,8 @@ function resetRound() {
 
   // 普通下一轮
   btn.style.display = 'none';
-  document.querySelectorAll('.player-hands img, .cpu-hands img')
-    .forEach(el => el.style.visibility = 'visible');
+  document.querySelectorAll('.cpu-hands img, .player-hands img')
+    .forEach(e=>e.style.visibility = 'visible');
   document.getElementById('result').innerText = '請等待倒數...';
   startCountdown();
 }
