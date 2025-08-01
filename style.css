@@ -1,21 +1,19 @@
 /* style.css */
 
-* { margin:0; padding:0; box-sizing:border-box; }
-body { overflow:hidden; font-family:sans-serif; color:#fff; background:#000; }
+* { margin:0; padding:0; box-sizing:border-box }
+body { overflow:hidden; font-family:sans-serif; color:#fff; background:#000 }
 
-video, img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
-#backgroundImage, #backgroundVideo { z-index:-2; }
-#characterImage, #characterVideo { z-index:-1; }
+video, img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover }
+#backgroundVideo, #backgroundImage { z-index:-2 }
+#characterVideo, #characterImage { z-index:-1 }
 
 #hud {
   position:absolute; top:10px; left:50%; transform:translateX(-50%);
   background:rgba(0,0,0,0.5); padding:5px 12px; border-radius:8px;
-  display:flex; align-items:center; gap:8px; font-size:14px;
-  z-index:10;
+  display:flex; align-items:center; gap:8px; font-size:14px; z-index:10;
 }
-
-#hud button { background:none; border:none; color:#fff; font-size:18px; cursor:pointer; }
-#soundHint { position:absolute; top:50px; right:10px; font-size:12px; }
+#hud button { background:none; border:none; color:#fff; font-size:18px; cursor:pointer }
+#soundHint { position:absolute; top:50px; right:10px; font-size:12px }
 
 #countdown, #result {
   position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
@@ -23,24 +21,15 @@ video, img { position:absolute; top:0; left:0; width:100%; height:100%; object-f
   font-size:24px; z-index:10;
 }
 
-.hands { position:absolute; width:100px; height:100px; }
-.cpu-hands { top:30%; left:50%; transform:translateX(-50%); }
-.player-hands { bottom:30%; left:50%; transform:translateX(-50%); }
+.hands { position:absolute; width:100px; height:100px }
+.cpu-hands { top:30%; left:50%; transform:translateX(-50%) }
+.player-hands { bottom:30%; left:50%; transform:translateX(-50%) }
 
 .hands img {
-  width:100%; height:100%; object-fit:contain; visibility:hidden;
-  transition:transform 0.3s;
+  width:100%; height:100%; object-fit:contain;
+  visibility:hidden; transition:transform 0.3s;
 }
-.hands img.scale { transform:scale(1.3); }
-
-.controls {
-  position:absolute; bottom:100px; left:50%; transform:translateX(-50%);
-  display:flex; gap:20px; z-index:10;
-}
-.controls button {
-  width:60px; height:60px; font-size:30px; border:none; border-radius:50%;
-  background:rgba(255,255,255,0.8); cursor:pointer;
-}
+.hands img.scale { transform:scale(1.3) }
 
 #continue {
   position:absolute; bottom:30px; left:50%; transform:translateX(-50%);
