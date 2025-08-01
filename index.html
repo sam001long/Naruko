@@ -12,7 +12,7 @@
   <video id="backgroundVideo" autoplay muted playsinline></video>
   <img id="backgroundImage" alt="背景" />
 
-  <!-- 顶部 HUD -->
+  <!-- 顶部 UI -->
   <div id="hud">
     <span id="sequenceDisplay">第 1 關</span>
     <span>｜</span>
@@ -23,36 +23,37 @@
     <div id="soundHint">請先點此開啟音效</div>
   </div>
 
-  <!-- 角色：视频 + 图片 回退 -->
+  <!-- 角色 -->
   <video id="characterVideo" autoplay muted playsinline></video>
   <img id="characterImage" alt="角色" />
 
-  <!-- 倒计时 & 结果 -->
+  <!-- 倒计时 & 结果提示 -->
   <div id="countdown"></div>
   <div id="result">請出拳！</div>
 
-  <!-- CPU 出拳（三槽位）-->
+  <!-- 出拳区 -->
   <div class="hands cpu-hands">
-    <img id="cpu-rock"     src="assets/rock.png"     alt="石頭"   />
-    <img id="cpu-paper"    src="assets/paper.png"    alt="布"     />
-    <img id="cpu-scissors" src="assets/scissors.png" alt="剪刀"   />
+    <img id="cpu-img" src="assets/rock.png" alt="CPU" />
   </div>
-
-  <!-- 玩家出拳（三槽位，點擊即出拳）-->
   <div class="hands player-hands">
-    <img id="player-rock"     src="assets/rock.png"     alt="石頭"   onclick="play('rock')"     />
-    <img id="player-paper"    src="assets/paper.png"    alt="布"     onclick="play('paper')"    />
-    <img id="player-scissors" src="assets/scissors.png" alt="剪刀"   onclick="play('scissors')" />
+    <img id="player-img" src="assets/rock.png" alt="玩家" />
   </div>
 
-  <!-- 下一步按钮 -->
+  <!-- 出拳按钮 -->
+  <div class="controls">
+    <button onclick="play('rock')">✊</button>
+    <button onclick="play('paper')">🖐️</button>
+    <button onclick="play('scissors')">✌️</button>
+  </div>
+
+  <!-- 继续/重来 -->
   <button id="continue" onclick="resetRound()">繼續</button>
 
-  <!-- 音效文件 -->
-  <audio id="audioBgm"    src="assets/bgm.mp3"   loop></audio>
-  <audio id="audioClick"  src="assets/click.mp3"></audio>
-  <audio id="audioWin"    src="assets/win.mp3"></audio>
-  <audio id="audioLose"   src="assets/lose.mp3"></audio>
+  <!-- 音效 -->
+  <audio id="audioBgm" src="assets/bgm.mp3" loop></audio>
+  <audio id="audioClick" src="assets/click.mp3"></audio>
+  <audio id="audioWin" src="assets/win.mp3"></audio>
+  <audio id="audioLose" src="assets/lose.mp3"></audio>
 
   <script src="script.js"></script>
 </body>
