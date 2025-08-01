@@ -1,7 +1,7 @@
 // script.js
 
 // ----- 配置区 -----
-const maxLevel = 8;       // 你的关卡数
+const maxLevel = 8;       // 总关卡数，请按实际修改
 const winTarget = 3;      // 连赢几把算过关
 let levelOrder = [];      // 随机关卡序列
 let orderIndex = 0;       // 当前序列索引
@@ -30,7 +30,7 @@ function weightedRandom(weights) {
 
 // ----- 初始化 -----
 function initGame() {
-  // 洗牌生成序列
+  // 随机关卡序列并洗牌
   levelOrder = Array.from({ length: maxLevel }, (_, i) => i + 1);
   for (let i = levelOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -71,9 +71,37 @@ function playSound(id) {
 function updateAssets() {
   const base = `assets/levels/level${level}/stage${stageVisualIndex}`;
 
-  // 背景图/视频载入同之前...
+  // 背景视频或图片
+  const videoBg = document.getElementById('backgroundVideo');
+  const imgBg   = document.getElementById('backgroundImage');
+  videoBg.src = `${base}/background.mp4`;
+  videoBg.load();
+  videoBg.onloadeddata = () => {
+    imgBg.style.display   = 'none';
+    videoBg.style.display = 'block';
+  };
+  videoBg.onerror = () => {
+    videoBg.style.display = 'none';
+    imgBg.src             = `${base}/background.jpg`;
+    imgBg.style.display   = 'block';
+  };
 
-  // 更新“第几关”与分数
+  // 角色视频或图片
+  const videoCh = document.getElementById('characterVideo');
+  const imgCh   = document.getElementById('characterImage');
+  videoCh.src = `${base}/character.mp4`;
+  videoCh.load();
+  videoCh.onloadeddata = () => {
+    imgCh.style.display   = 'none';
+    videoCh.style.display = 'block';
+  };
+  videoCh.onerror = () => {
+    videoCh.style.display = 'none';
+    imgCh.src             = `${base}/character.png`;
+    imgCh.style.display   = 'block';
+  };
+
+  // 更新第几关与分数
   document.getElementById('sequenceDisplay').innerText = orderIndex + 1;
   document.getElementById('playerScore').innerText      = playerScore;
   document.getElementById('cpuScore').innerText         = cpuScore;
@@ -94,7 +122,7 @@ function startCountdown() {
     } else {
       clearInterval(iv);
       cd.style.display = 'none';
-      document.querySelectorAll('.cpu-slot, .player-hands img')
+      document.querySelectorAll('.cpu-hands img, .player-hands img')
         .forEach(el => el.style.visibility = 'visible');
       document.getElementById('result').innerText = '請出拳！';
       countdownActive = false;
@@ -118,52 +146,43 @@ function play(playerMove) {
     }
   });
 
-  // CPU 出拳：三次抽样，但当偏置生效时保证一个拳两次
-  const biased = (level >= 5); // 示例：第5关以后偏置
-  let cpuChoices;
-  if (biased) {
-    // 抽一次主拳，再抽一次辅拳
-    const primary = weightedRandom({ rock:1, paper:2, scissors:1 });
-    const others  = ['rock','paper','scissors'].filter(m=>m!==primary);
-    const secondary = others[Math.floor(Math.random()*2)];
-    cpuChoices = [primary, primary, secondary];
-  } else {
-    // 平均分布，等概率三拳
-    cpuChoices = ['rock','paper','scissors'];
-  }
-  // 随机打乱展示位置
-  cpuChoices.sort(() => Math.random() - 0.5);
+  // CPU 出拳（加权示例：5 关后 paper 概率加倍）
+  const biased = level >= 5;
+  const weights = biased
+    ? { rock: 1, paper: 2, scissors: 1 }
+    : { rock: 1, paper: 1, scissors: 1 };
+  const cpuMove = weightedRandom(weights);
 
-  // 显示到三个槽位
-  cpuChoices.forEach((move, i) => {
-    const slot = document.getElementById(`cpu-slot-${i+1}`);
-    slot.src = `assets/${move}.png`;
-    slot.alt = move;
-    slot.style.visibility = 'visible';
-    slot.classList.add('scale');
+  // CPU 动画
+  document.querySelectorAll('.cpu-hands img').forEach(el => {
+    if (el.src.includes(`${cpuMove}.png`)) {
+      el.style.visibility = 'visible';
+      el.classList.add('scale');
+    } else {
+      el.style.visibility = 'hidden';
+    }
   });
 
-  // 停掉动画
+  // 移除动画标签
   setTimeout(() => {
-    document.querySelectorAll('.cpu-slot, .player-hands img')
+    document.querySelectorAll('.player-hands img, .cpu-hands img')
       .forEach(el => el.classList.remove('scale'));
   }, 300);
 
   // 判定胜负
-  const cpuMove = cpuChoices[0]; // 以第一个为“官方”出拳判定
   let res;
   if (playerMove === cpuMove) {
     res = '平手！';
   } else if (
-    (playerMove==='rock'     && cpuMove==='scissors') ||
-    (playerMove==='scissors' && cpuMove==='paper')    ||
-    (playerMove==='paper'    && cpuMove==='rock')
+    (playerMove === 'rock'     && cpuMove === 'scissors') ||
+    (playerMove === 'scissors' && cpuMove === 'paper')    ||
+    (playerMove === 'paper'    && cpuMove === 'rock')
   ) {
-    res = '你贏啦！';
+    res = '你贏了！';
     playerScore++;
     stageVisualIndex = Math.min(stageVisualIndex + 1, maxLevel);
   } else {
-    res = '你輸囉！再來!';
+    res = '你輸了！';
     cpuScore++;
     stageVisualIndex = 1;
   }
@@ -180,7 +199,7 @@ function play(playerMove) {
 function resetRound() {
   const btn = document.getElementById('continue');
 
-  // 失败
+  // 失败：显示“重新開始”
   if (cpuScore >= winTarget) {
     document.getElementById('result').innerText = '💀 挑戰失敗！';
     btn.innerText = '重新開始';
@@ -193,7 +212,36 @@ function resetRound() {
     return;
   }
 
-  // 胜利或所有关卡打完逻辑同之前...
+  // 胜利：下一关或通关
+  if (playerScore >= winTarget) {
+    orderIndex++;
+    btn.style.display = 'none';
+    if (orderIndex < levelOrder.length) {
+      level = levelOrder[orderIndex];
+      playerScore = cpuScore = 0;
+      stageVisualIndex = 1;
+      updateAssets();
+      document.getElementById('result').innerText = `🎉 前往第 ${orderIndex+1} 關`;
+      return startCountdown();
+    } else {
+      document.getElementById('result').innerText = '🎊 恭喜破關！';
+      btn.innerText = '重新開始';
+      btn.onclick = () => {
+        btn.onclick = resetRound;
+        btn.style.display = 'none';
+        initGame();
+      };
+      btn.style.display = 'block';
+      return;
+    }
+  }
+
+  // 普通下一轮
+  btn.style.display = 'none';
+  document.querySelectorAll('.player-hands img, .cpu-hands img')
+    .forEach(el => el.style.visibility = 'visible');
+  document.getElementById('result').innerText = '請等待倒數...';
+  startCountdown();
 }
 
 // 暴露给 HTML
